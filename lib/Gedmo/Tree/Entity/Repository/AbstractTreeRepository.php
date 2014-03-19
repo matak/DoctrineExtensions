@@ -26,34 +26,30 @@ abstract class AbstractTreeRepository extends EntityRepository implements Reposi
     protected $repoUtils = null;
 
     /**
-     * {@inheritdoc}
+     * @link http://forum.nette.org/cs/13906-nette-doctrine2-gedmo#p104778
      */
     public function __construct(EntityManager $em, ClassMetadata $class)
     {
         parent::__construct($em, $class);
         $treeListener = null;
         foreach ($em->getEventManager()->getListeners() as $listeners) {
-            foreach ($listeners as $listener) {
-                if ($listener instanceof \Gedmo\Tree\TreeListener) {
-                    $treeListener = $listener;
-                    break;
+            if ( is_array($listeners) ) {
+                foreach ($listeners as $listener) {
+                    if ($listener instanceof \Gedmo\Tree\TreeListener) {
+                        $treeListener = $listener;
+                        break;
+                    }
                 }
+
+            } else if ($listeners instanceof \Gedmo\Tree\TreeListener) {
+                $treeListener = $listeners;
+                break;
             }
+
             if ($treeListener) {
                 break;
             }
         }
-
-        if (is_null($treeListener)) {
-            throw new \Gedmo\Exception\InvalidMappingException('Tree listener was not found on your entity manager, it must be hooked into the event manager');
-        }
-
-        $this->listener = $treeListener;
-        if (!$this->validate()) {
-            throw new \Gedmo\Exception\InvalidMappingException('This repository cannot be used for tree type: ' . $treeListener->getStrategy($em, $class->name)->getName());
-        }
-
-        $this->repoUtils = new RepositoryUtils($this->_em, $this->getClassMetadata(), $this->listener, $this);
     }
 
     /**
